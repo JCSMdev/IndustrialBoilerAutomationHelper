@@ -9,10 +9,16 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::get('/prices', [PricesController::class, 'index']);
 
 Route::get('/test', function () {
     return response()->json([
         'message' => 'API is working'
     ]);
 });
+
+Route::middleware('api.token')->get(
+    '/prices',
+    [PricesController::class, 'index']
+);
+
+//Route::get('/prices', [PricesController::class, 'index']);
