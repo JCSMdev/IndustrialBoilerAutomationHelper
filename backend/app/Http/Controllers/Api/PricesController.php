@@ -25,8 +25,14 @@ class PricesController extends Controller
                 'message' => 'Failed to fetch energy prices.'
             ], 502);
         }
+        $formated = $response->json();
 
-        return response()->json($response->json());
+        $prices = array_map(fn($item) => [
+                'timestamp' => $item['timestamp'],
+                'price'     => $item['values']['day_ahead_price'],
+            ],
+            $formated['data']);
+        return response()->json($prices);
     }
 
     /**

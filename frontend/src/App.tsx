@@ -1,24 +1,12 @@
 const token = import.meta.env.VITE_API_TOKEN;
 import { useEffect, useState } from "react";
 import "./App.css";
+import HeatMap from "./components/HeatMap"
+import { EnergyPrice } from "./components/PriceBlock";
 
 
-interface boxStyle {
-  backgroundColor: string;
-  color: string;
-}
-
-function PriceBlock({ price, style }: { price: number, style: boxStyle }) {
-  return (
-    <div className="price-block" style={style}>{price} </div>
-  );
-}
 
 
-function GetColor(normalized: number) {
-  const hue = 120 - normalized * 120;
-  return `hsl(${hue}, 98%, 50%)`;
-}
 
 function App() {
 
@@ -30,7 +18,7 @@ function App() {
   );
   // Fetch prices from API
   const [priceData, setPriceData] = useState<any[]>([]);
-
+  let gotData = true;
   useEffect(() => {
     async function fetchPrices() {
       try {
@@ -42,14 +30,15 @@ function App() {
             },
           }
         );
-        if (!response.ok) {
-          return(<h1>Error: HTTP ${response.status}</h1>);
+        gotData = response.ok;
+        if (!gotData) {
+          return (<h1>Error: HTTP ${response.status}</h1>);
         }
 
 
         const result = await response.json();
-
-        setPriceData(result.data ?? []);
+        console.log(result)
+        setPriceData(result ?? []);
         setSecondsLeft(REFRESH_MINUTES * 60);
       }
       catch (error) { console.error("Failed to fetch prices:", error); }
@@ -80,34 +69,19 @@ function App() {
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
   const countdown = `Automatic refresh in: ${minutes}:${seconds.toString().padStart(2, "0")}`;
-
-  const prices = priceData.map(
-    (item) => item.values.day_ahead_price
-  );
-
-  // Get info for rendering
-  let maxPrice = Math.max(...prices);
-  let minPrice = Math.min(...prices);
-
-  const normalize = (price: number) => (price - minPrice) / (maxPrice - minPrice);
+  
+ const pricesFromatted: EnergyPrice[]  = priceData.map(
+   (data) => new EnergyPrice(data.price,data.timestamp));
 
   // Rendering heatmap
+  if (!gotData) {
+    return (<h1>ERROR</h1>);
+  }
   return (
     <div>
       <h1>Energy Prices</h1>
       <p>{countdown}</p>
-      <div className="heatmap">
-        {prices.map((price, id) => {
-          const normalized = normalize(price)
-          return <PriceBlock key={id}
-            price={price}
-            style={{
-              backgroundColor: GetColor(normalized),
-              color: "black",
-            }} />
-        }
-        )}
-      </div>
+      <HeatMap data={pricesFromatted} />
     </div>
   );
 }
